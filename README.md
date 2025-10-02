@@ -26,9 +26,9 @@ The *UIHandler* class will have the following fields (UI elements):
 
 3. *fileSubmit*
 
-4. *leftWindow*
+4. *preWindow*
 
-5. *rightWindow*
+5. *postWindow*
 
 6. *sliderBar*
 
@@ -38,19 +38,27 @@ The *UIHandler* class will have the following fields (UI elements):
 
 9. *spinner*
 
+10. *errorMessage*
+
 and the following methods that will be callbacks
 
 1. *onLinkUpload*
 
 2. *onFileUpload*
 
-3. *onSliderMoved*
+3. *onExecStart*
 
-4. *onExecStart*
+4. *showSpinner*
 
-5. *showSpinner*
+5. *hideSpinner*
 
-6. *hideSpinner*
+6. *updSliderValue*
+
+also helpers
+
+7. *drawPicture*
+
+8. *showError*
 
 The class *LinkToMath* will have as fields all data extracted from users input that is relevant to processing algorithm, namely 
 
@@ -58,10 +66,19 @@ The class *LinkToMath* will have as fields all data extracted from users input t
 
 2. *imageData* - the *2d* array of pixels
 
-3. *blurRadius* - radius in which we perform blurring
+3. *processedImageData* - the processed 2d array of pixels
 
-and methods, that will call functions from [algo.js](algo.js) to perform computations
+
+and methods, that will call functions from [algo.js](algo.js) to perform computations, and also methods for handling data from UI
 
 1. *performBlur*
+
+2. *loadFromUrl*
+
+3. *loadFromFile*
+
+4. *requestedStart*
+
+5. *getImageData*
 
 
