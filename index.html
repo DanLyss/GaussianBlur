@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <title> Gaussian Blur </title>
+</head>
+<body>
+        <input type = "text" id = "linkAdress" placeholder = "Enter the link">
+        <p> 
+            <button id = "buttonForLink"> 
+                Upload by link 
+            </button>
+        </p>
+        <input type = "file" accept=".jpg" id = "fileUpload">
+        <input type = "range" min = 0 max = 50 value = 10 step = 1>
+        <span id = "blurRadius">20</span>
+        <canvas id = "preImage" width = "400" height = "400" style="border:1px solid black;">
+
+        </canvas>
+        <canvas id = "postImage" width = "400" height = "400" style="border:1px solid black;">
+
+        </canvas>
+</body>
