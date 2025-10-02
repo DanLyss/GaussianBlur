@@ -11,11 +11,10 @@ class UIHandler{
         this.sliderValue = document.getElementById("blurRadius");
         this.startButton = document.getElementById("startProcessing");
         this.spinner = document.getElementById("spinner");
-        this.errorMessage = document.getElementById("message");
+        this.Message = document.getElementById("message");
         this.bindEvents();
-
-        //to create a connection
-        this.linkToMath = new LinkToMath();
+        //to create a connection 
+        this.linkToMath = new LinkToMath(); 
     }
 
     //start listening
@@ -30,7 +29,7 @@ class UIHandler{
         let url = this.linkHolder.value;
         const result = await this.linkToMath.loadFromUrl(url);
         if (result === false){
-            this.showError("Failure to read uploaded file");
+            this.showText("Failure to read uploaded file");
         }
         else{
             this.drawPicture();
@@ -41,7 +40,7 @@ class UIHandler{
         let file = event.target.files[0];
         const result = await this.linkToMath.loadFromFile(file);
         if (result === false){
-            this.showError("Failure to read uploaded file");
+            this.showText("Failure to read uploaded file");
         }
         else{
             this.drawPicture();
@@ -49,9 +48,29 @@ class UIHandler{
     }
 
     async onExecStart(event){
-        let result = await this.linkToMath.requestedStart(this.sliderValue);
-        
+        this.showSpinner();
+        this.startButton.textContent = "Stop processing";
+        let result = await this.linkToMath.requestedStart(parseInt(this.sliderBar.value, 10),
+            (progress) => {
+                 this.Message.textContent = `Progress is ${progress}% `;
+            } ,// use for testing only
+     50);
+        this.startButton.textContent = "Start processing";
+
+        if (result === true){
+            this.showText("Job is done");
+        }
+        this.hideSpinner();
+
+        if (result === "stopped"){
+            this.showText("You stopped the processing");
+        }
+
+        if (result === false){
+            this.showText("No Image was chosen previously");
+        }
     }
+
     //spiner handling
     showSpinner(){
         this.spinner.style.display = "block";
@@ -79,19 +98,43 @@ class UIHandler{
         }
     }
 
-    showError(text){
-        this.errorMessage.textContent = text;
+    showText(text){
+        this.Message.textContent = text;
+        setTimeout( () =>
+            {this.Message.textContent = ""},
+            1000);
     }
 }
 
 
 class LinkToMath{
-    constructor(){
+    constructor(UIparent){
         this.image = null;
         this.imageData = null;
         this.processedImageData = null;
+        this.isProcessStarted = false;
+        this.needToStop = false;
+
+        //for testing
+        this.data = new Array(1000000).fill(0);
+        this.idx = 0;
     }
     
+    smallWork(blurRadius, timePeriod){
+        const start = performance.now();
+        let lim = Math.min(this.idx + 1000, this.data.length);
+        while (this.idx < lim){
+            this.data[this.idx] += this.idx;
+            this.idx += 1;
+
+            if (performance.now() - start >= timePeriod){
+                return false;
+            }
+        }
+        return this.idx >= this.data.length;
+    }
+
+
     loadFromUrl(url){
         return new Promise(
             resolve =>{
@@ -128,16 +171,45 @@ class LinkToMath{
     }
 
 
-    requestedStart(){
+    requestedStart(blurRadius, 
+        UIcall, //optional for now
+         timePeriod){
+        if (this.isProcessStarted === true){
+            this.needToStop = true;
+            return Promise.resolve("stopped");
+        }
+
+        //for testing
+        this.idx = 0;
+        
+        this.isProcessStarted = true;
+        this.needToStop = false;
         return new Promise(
             resolve => {
                 if (this.image == null){
                     resolve(false);
+                    this.isProcessStarted =  false;
+                    return;
                 }
-                //TODO() start computations, somehow return result to UI, meaning updating UI during progress
+                const interval = setInterval(() =>{
 
-                
+                    let someWork = this.smallWork(blurRadius, timePeriod);
+                    if (this.needToStop === true){
+                        clearInterval(interval);
+                        this.isProcessStarted = false;
+                        resolve("stopped");
+                    }
+                    if (UIcall){
+                        UIcall((this.idx / this.data.length * 100).toFixed(3));
+                    }
+                    if (someWork){
+                        clearInterval(interval);
+                        this.isProcessStarted = false;
+                        resolve(true);
 
+                    }
+                }, timePeriod
+                )
             }
         )
     }
