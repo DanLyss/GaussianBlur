@@ -113,25 +113,8 @@ class LinkToMath{
         this.imageData = null;
         this.processedImageData = null;
         this.isProcessStarted = false;
-        this.needToStop = false;
 
-        //for testing
-        this.data = new Array(1000000).fill(0);
-        this.idx = 0;
-    }
-    
-    smallWork(blurRadius, timePeriod){
-        const start = performance.now();
-        let lim = Math.min(this.idx + 1000, this.data.length);
-        while (this.idx < lim){
-            this.data[this.idx] += this.idx;
-            this.idx += 1;
-
-            if (performance.now() - start >= timePeriod){
-                return false;
-            }
-        }
-        return this.idx >= this.data.length;
+        this.worker = new Worker("algoWorker.js");
     }
 
 
@@ -142,6 +125,7 @@ class LinkToMath{
                 img.onload = () => {
                     if (img.width > 0 && img.height > 0){
                         this.image = img;
+                        this.getImageData();
                         resolve(img);
                     } else{
                         resolve(false);
@@ -167,7 +151,14 @@ class LinkToMath{
         canvas.width = this.image.width;
         canvas.height = this.image.height;
         ctx.drawImage(this.image, 0, 0);
-        return ctx.getImageData(0, 0, canvas.width, canvas.height);
+        this.imageData =  ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+        //also initialize place for image in processedData
+        this.processedImageData = new ImageData(
+            new Uint8ClampedArray(this.imageData.data.length),
+            this.imageData.width,
+            this.imageData.height
+        );
     }
 
 
@@ -175,15 +166,11 @@ class LinkToMath{
         UIcall, //optional for now
          timePeriod){
         if (this.isProcessStarted === true){
-            this.needToStop = true;
+            this.worker.postMessage({cmd: "stop"});
             return Promise.resolve("stopped");
         }
-
-        //for testing
-        this.idx = 0;
         
         this.isProcessStarted = true;
-        this.needToStop = false;
         return new Promise(
             resolve => {
                 if (this.image == null){
@@ -191,25 +178,38 @@ class LinkToMath{
                     this.isProcessStarted =  false;
                     return;
                 }
-                const interval = setInterval(() =>{
 
-                    let someWork = this.smallWork(blurRadius, timePeriod);
-                    if (this.needToStop === true){
-                        clearInterval(interval);
-                        this.isProcessStarted = false;
+                this.worker.onmessage = (e) =>
+                {
+                    const msg = e.data;
+
+                    if (msg.type === "stopped"){
+                        this.isProcessStarted =  false;
                         resolve("stopped");
                     }
-                    if (UIcall){
-                        UIcall((this.idx / this.data.length * 100).toFixed(3));
+
+                    if (msg.type === "progress"){
+                        if (UIcall){
+                            UIcall(msg.progress);
+                        }
                     }
-                    if (someWork){
-                        clearInterval(interval);
+
+                    
+                    if (msg.type === "finished"){
                         this.isProcessStarted = false;
                         resolve(true);
-
                     }
-                }, timePeriod
-                )
+                }
+
+                this.worker.postMessage({
+                    cmd: "start",
+                    blurRadius,
+                    timePeriod,
+                    data: this.imageData,
+                    resultData: this.processedImageData.data.buffer 
+                },
+                [this.processedImageData.data.buffer]
+            )
             }
         )
     }
