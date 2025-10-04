@@ -3,29 +3,68 @@ let height = 0;
 let width = 0;
 let inputPixels = null;
 let outputPixels = null;
+let intermPixels = null;
 let blurRadius = 0;
 let timePeriod = 0;
+let convMatrix = null;
+let sigma = 0;
 
 let idx = 0;
 let total = 0;
 
 
 function doWork(){
-    let time = performance.now();
-    while (idx < total && performance.now() - time <= timePeriod){
-        outputPixels[4 * idx] = 255 - inputPixels[4 * idx];
-        outputPixels[4 * idx + 1] = 255 - inputPixels[4 * idx + 1];
-        outputPixels[4 * idx + 2] = 255 - inputPixels[4 * idx + 2];
-        outputPixels[4 * idx + 3] = inputPixels[4 * idx + 3];
-
-        idx += 1;
+    const start = performance.now(); 
+    //vertical Gaussan blur
+    while (idx < height){
+        const i = idx;
+            for (let j = 0; j < width; j++){
+                let tot1 = 0;
+                let tot2 = 0;
+                let tot3 = 0;
+                for (let pos = -3 * sigma; pos <= 3 * sigma; pos ++){
+                    const xpos = Math.min(Math.max(0, i + pos), height - 1);
+                    tot1 += convMatrix[pos + 3 * sigma] * inputPixels[4 * (xpos * width + j)];
+                    tot2 += convMatrix[pos + 3 * sigma] * inputPixels[4 * (xpos * width + j) + 1];
+                    tot3 += convMatrix[pos + 3 * sigma] * inputPixels[4 * (xpos * width + j) + 2];
+                }
+                intermPixels[4 * (i * width + j)] = tot1;
+                intermPixels[4 * (i * width + j) + 1] = tot2;
+                intermPixels[4 * (i * width + j) + 2] = tot3;
+                intermPixels[4 * (i * width + j) + 3] = inputPixels[4 * (i * width + j) + 3];
+            }
+            idx ++;
+            if (performance.now() - start >= timePeriod){
+                return {intermResult: false, percentDone: (i / (2 * height) * 100).toFixed(3)};
+            }
+        }
+   //horizontal Gaussian blur
+   while (idx < 2 * height){
+    const i = idx - height;
+    for (let j = 0; j < width; j++){
+        let tot1 = 0;
+        let tot2 = 0;
+        let tot3 = 0;
+        for (let pos = -3 * sigma; pos <= 3 * sigma; pos ++){
+            const ypos = Math.min(Math.max(0, j + pos), width - 1);
+            tot1 += convMatrix[pos + 3 * sigma] * intermPixels[4 * (i * width + ypos)];
+            tot2 += convMatrix[pos + 3 * sigma] * intermPixels[4 * (i * width + ypos) + 1];
+            tot3 += convMatrix[pos + 3 * sigma] * intermPixels[4 * (i * width + ypos) + 2];
+        }
+        outputPixels[4 * (i * width + j)] = tot1;
+        outputPixels[4 * (i * width + j) + 1] = tot2;
+        outputPixels[4 * (i * width + j) + 2] = tot3;
+        outputPixels[4 * (i * width + j) + 3] = intermPixels[4 * (i * width + j) + 3];
     }
-    
-    if (idx < total){
-        return {intermResult: false, percentDone: (idx / total * 100).toFixed(3)};
+    idx ++;
+    if (idx == 2 * height){
+        return {intermResult: true, percentDone: 100};
     }
 
-    return {intermResult: true, percentDone: 100};
+    if (performance.now() - start >= timePeriod){
+        return {intermResult: false, percentDone: (idx / (2 * height) * 100).toFixed(3)};
+    }
+   }
 }
 
 
@@ -33,12 +72,26 @@ onmessage = function(e) {
     const {cmd, blurRadius: br, timePeriod: tp, inputPixels: inputBuf, width: w, height: h} = e.data;
  
     inputPixels  = new Uint8ClampedArray(inputBuf);
+    intermPixels = new Uint8ClampedArray(inputPixels.length);
     outputPixels = new Uint8ClampedArray(inputPixels.length);
     blurRadius   = br;
     timePeriod   = tp;
     width        = w;
     height       = h;
     total        = width * height;
+
+    //create Gaussian distribution of size 6 sigma
+    sigma  = Math.round(blurRadius);
+    var norm = - 1/(Math.sqrt(2 * Math.PI) * sigma);
+    convMatrix = new Float32Array(6 * sigma + 1);
+    for (let i = 0; i <= 3 * sigma; i++){
+        convMatrix[3 * sigma + i] = Math.exp(-(i ** 2)/(2 * sigma **2))/(Math.sqrt(2 * Math.PI) * sigma);
+        convMatrix[3 * sigma - i] = Math.exp(-(i ** 2)/(2 * sigma **2))/(Math.sqrt(2 * Math.PI) * sigma);
+        norm += 2 * convMatrix[3 * sigma + i];
+    }
+    for (let i = 0; i <= 6 * sigma; i++){
+        convMatrix[i] /= norm;
+    }
 
     if (cmd == "stop"){
         needToStop = true;
@@ -47,6 +100,7 @@ onmessage = function(e) {
     if (cmd == "start"){
         idx = 0;
         needToStop = false;
+
         const interval = setInterval(() =>
         {
             let {intermResult, percentDone} = doWork();
