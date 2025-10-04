@@ -49,6 +49,7 @@ class UIHandler{
 
     async onExecStart(event){
         this.showSpinner();
+        this.clearPostWindow();
         this.startButton.textContent = "Stop processing";
         let result = await this.linkToMath.requestedStart(parseInt(this.sliderBar.value, 10),
             (progress) => {
@@ -59,6 +60,7 @@ class UIHandler{
 
         if (result === true){
             this.showText("Job is done");
+            this.drawPicture("post");
         }
         this.hideSpinner();
 
@@ -93,7 +95,7 @@ class UIHandler{
         else{
             if (window === "post"){
                 let ctx = this.postWindow.getContext("2d");
-                ctx.drawImage(this.linkToMath.image, 0, 0, this.postWindow.width, this.postWindow.height);
+                ctx.drawImage(this.linkToMath.postImage, 0, 0, this.postWindow.width, this.postWindow.height);
             }
         }
     }
@@ -104,12 +106,18 @@ class UIHandler{
             {this.Message.textContent = ""},
             1000);
     }
+
+    clearPostWindow() {
+        const ctx = this.postWindow.getContext("2d");
+        ctx.clearRect(0, 0, this.postWindow.width, this.postWindow.height);
+    }
 }
 
 
 class LinkToMath{
     constructor(UIparent){
         this.image = null;
+        this.postImage = null;
         this.imageData = null;
         this.processedImageData = null;
         this.isProcessStarted = false;
@@ -161,6 +169,19 @@ class LinkToMath{
         );
     }
 
+    //not UI
+    postImageInit(){
+        const canvas = document.createElement("canvas");
+        canvas.width = this.processedImageData.width;
+        canvas.height = this.processedImageData.height;
+        const ctx = canvas.getContext("2d");
+        ctx.putImageData(this.processedImageData, 0, 0);
+        const dataUrl = canvas.toDataURL();
+        const newImg = new Image();
+        newImg.src = dataUrl;
+        this.postImage = newImg;
+    }
+
 
     requestedStart(blurRadius, 
         UIcall, //optional for now
@@ -174,8 +195,8 @@ class LinkToMath{
         return new Promise(
             resolve => {
                 if (this.image == null){
-                    resolve(false);
                     this.isProcessStarted =  false;
+                    resolve(false);
                     return;
                 }
 
@@ -197,6 +218,13 @@ class LinkToMath{
                     
                     if (msg.type === "finished"){
                         this.isProcessStarted = false;
+                        this.processedImageData = new ImageData(
+                            new Uint8ClampedArray(msg.resultImage),
+                            this.imageData.width, 
+                            this.imageData.height
+                        )
+
+                        this.postImageInit();
                         resolve(true);
                     }
                 }
@@ -205,11 +233,13 @@ class LinkToMath{
                     cmd: "start",
                     blurRadius,
                     timePeriod,
-                    data: this.imageData,
-                    resultData: this.processedImageData.data.buffer 
+                    inputPixels: this.imageData.data.buffer,
+                    width: this.imageData.width,
+                    height: this.imageData.height
                 },
-                [this.processedImageData.data.buffer]
             )
+            
+
             }
         )
     }
