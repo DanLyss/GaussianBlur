@@ -67,6 +67,24 @@ function doWork(){
    }
 }
 
+function createGaussian(){
+     //create Gaussian distribution of size 6 sigma
+    sigma = Math.round(blurRadius);
+    var norm = 0
+    convMatrix = new Float32Array(6 * sigma + 1);
+    for (let i = 0; i <= 3 * sigma; i++){
+        const currVal = Math.exp(-(i ** 2)/(2 * sigma **2))/(Math.sqrt(2 * Math.PI) * sigma);
+        convMatrix[3 * sigma + i] = currVal
+        convMatrix[3 * sigma - i] = currVal
+        norm += 2 * currVal;
+        if (i == 0){
+            norm -= currVal;
+        }
+    }
+    for (let i = 0; i <= 6 * sigma; i++){
+        convMatrix[i] /= norm;
+    }
+}
 
 onmessage = function(e) {
     const {cmd, blurRadius: br, timePeriod: tp, inputPixels: inputBuf, width: w, height: h} = e.data;
@@ -80,18 +98,7 @@ onmessage = function(e) {
     height       = h;
     total        = width * height;
 
-    //create Gaussian distribution of size 6 sigma
-    sigma  = Math.round(blurRadius);
-    var norm = - 1/(Math.sqrt(2 * Math.PI) * sigma);
-    convMatrix = new Float32Array(6 * sigma + 1);
-    for (let i = 0; i <= 3 * sigma; i++){
-        convMatrix[3 * sigma + i] = Math.exp(-(i ** 2)/(2 * sigma **2))/(Math.sqrt(2 * Math.PI) * sigma);
-        convMatrix[3 * sigma - i] = Math.exp(-(i ** 2)/(2 * sigma **2))/(Math.sqrt(2 * Math.PI) * sigma);
-        norm += 2 * convMatrix[3 * sigma + i];
-    }
-    for (let i = 0; i <= 6 * sigma; i++){
-        convMatrix[i] /= norm;
-    }
+    createGaussian();
 
     if (cmd == "stop"){
         needToStop = true;

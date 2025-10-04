@@ -14,12 +14,17 @@
         <div id="message" style="color: red; font-weight: bold;"></div>
         <input type = "range" min = 0 max = 50 value = 10 step = 1 id = "sliderBar">
         <span id = "blurRadius">20</span>
-        <canvas id = "preImage" width = "400" height = "400" style="border:1px solid black;">
-
+        <canvas id="preImage"
+            width="400"
+            height="400"
+            style="border:1px solid black; width:400px; height:400px;">
         </canvas>
-        <canvas id = "postImage" width = "400" height = "400" style="border:1px solid black;">
-
+       <canvas id="postImage"
+            width="400"
+            height="400"
+            style="border:1px solid black; width:400px; height:400px;">
         </canvas>
+
         <button id = "startProcessing" > 
             Start processing
         </button>
@@ -29,10 +34,5 @@
         <div id="spinner" style="display:none;">
     Loading...
         </div>
-        <script src = "main.js"> </script>
-        <script> window.onload = () =>
-            {
-                new UIHandler();
-            }
-        </script>
+        <script type="module" src="./main.js"></script>
 </body>
