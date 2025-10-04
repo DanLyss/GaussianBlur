@@ -12,6 +12,7 @@ class UIHandler{
         this.startButton = document.getElementById("startProcessing");
         this.spinner = document.getElementById("spinner");
         this.Message = document.getElementById("message");
+        this.downloadButton = document.getElementById("downloadResult");
         this.bindEvents();
         //to create a connection 
         this.linkToMath = new LinkToMath(); 
@@ -23,6 +24,7 @@ class UIHandler{
         this.fileSubmit.addEventListener("change", this.onFileUpload.bind(this));
         this.startButton.addEventListener("click", this.onExecStart.bind(this));
         this.sliderBar.addEventListener("input", this.updSliderValue.bind(this));
+        this.downloadButton.addEventListener("click", this.onDownloadButton.bind(this));
     }
 
     async onLinkUpload(event){
@@ -46,6 +48,25 @@ class UIHandler{
             this.drawPicture();
         }
     }
+
+    onDownloadButton(event){
+        const canvas = this.postWindow;
+        const ctx = canvas.getContext("2d");
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        if (data.every(v => v === 0)){
+            this.showText("Attempt to download empty canvas");
+        }
+        else{
+            canvas.toBlob(b => {
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(b);
+                a.download = "processed.png";
+                a.click();
+                URL.revokeObjectURL(a.href);
+            });
+        }
+    }
+
 
     async onExecStart(event){
         this.showSpinner();
