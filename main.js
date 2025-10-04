@@ -160,13 +160,6 @@ class LinkToMath{
         canvas.height = this.image.height;
         ctx.drawImage(this.image, 0, 0);
         this.imageData =  ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-        //also initialize place for image in processedData
-        this.processedImageData = new ImageData(
-            new Uint8ClampedArray(this.imageData.data.length),
-            this.imageData.width,
-            this.imageData.height
-        );
     }
 
     //not UI
@@ -238,8 +231,6 @@ class LinkToMath{
                     height: this.imageData.height
                 },
             )
-            
-
             }
         )
     }
