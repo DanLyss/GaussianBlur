@@ -1,16 +1,27 @@
 export class LinkToMath{
-    constructor(UIparent){
+    image: HTMLImageElement | null;
+    postImage: HTMLImageElement | null;
+    imageData: ImageData | null;
+    processedImageData: ImageData | null;
+    isProcessStarted: boolean;
+    worker!: Worker;
+
+    constructor(){
         this.image = null;
         this.postImage = null;
         this.imageData = null;
         this.processedImageData = null;
         this.isProcessStarted = false;
 
-        this.worker = new Worker(new URL("./algoWorker.js", import.meta.url), { type: "module" });
-    }
+        this.worker = new Worker(
+            new URL("./algoWorker.js", import.meta.url),
+            { type: "module" }
+        );
+
+ }
 
 
-    loadFromUrl(url){
+    loadFromUrl(url: string): Promise<HTMLImageElement | false>{
         return new Promise(
             resolve =>{
                 const img = new Image();
@@ -32,14 +43,16 @@ export class LinkToMath{
         )
     }
 
-    loadFromFile(file){
+    loadFromFile(file: File): Promise<HTMLImageElement | false>{
         return this.loadFromUrl(URL.createObjectURL(file));
     }
 
     //not UI!!
     getImageData(){
+        if (!this.image) return;
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
+        if (!ctx) return;
         canvas.width = this.image.width;
         canvas.height = this.image.height;
         ctx.drawImage(this.image, 0, 0);
@@ -48,10 +61,12 @@ export class LinkToMath{
 
     //not UI
     postImageInit(){
+        if (!this.processedImageData) return;
         const canvas = document.createElement("canvas");
         canvas.width = this.processedImageData.width;
         canvas.height = this.processedImageData.height;
         const ctx = canvas.getContext("2d");
+        if (!ctx) return;
         ctx.putImageData(this.processedImageData, 0, 0);
         const dataUrl = canvas.toDataURL();
         const newImg = new Image();
@@ -60,9 +75,10 @@ export class LinkToMath{
     }
 
 
-    requestedStart(blurRadius, 
-        UIcall, //optional for now
-         timePeriod){
+    requestedStart(blurRadius: number, 
+        UIcall?: (progress: number) => void, //optional for now
+         timePeriod: number = 50):
+         Promise<boolean | "stopped">{
         if (this.isProcessStarted === true){
             this.worker.postMessage({cmd: "stop"});
             return Promise.resolve("stopped");
@@ -71,7 +87,7 @@ export class LinkToMath{
         this.isProcessStarted = true;
         return new Promise(
             resolve => {
-                if (this.image == null){
+                if (!this.image || !this.imageData){
                     this.isProcessStarted =  false;
                     resolve(false);
                     return;
@@ -97,8 +113,8 @@ export class LinkToMath{
                         this.isProcessStarted = false;
                         this.processedImageData = new ImageData(
                             new Uint8ClampedArray(msg.resultImage),
-                            this.imageData.width, 
-                            this.imageData.height
+                            this.imageData!.width, 
+                            this.imageData!.height
                         )
 
                         this.postImageInit();

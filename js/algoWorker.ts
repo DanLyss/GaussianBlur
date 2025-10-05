@@ -1,19 +1,19 @@
-let needToStop = false;
-let height = 0;
-let width = 0;
-let inputPixels = null;
-let outputPixels = null;
-let intermPixels = null;
-let blurRadius = 0;
-let timePeriod = 0;
-let convMatrix = null;
-let sigma = 0;
+let needToStop: boolean = false;
+let height: number = 0;
+let width: number = 0;
+let inputPixels: Uint8ClampedArray | null = null;
+let outputPixels: Uint8ClampedArray | null = null;
+let intermPixels: Uint8ClampedArray | null = null;
+let blurRadius: number = 0;
+let timePeriod: number = 0;
+let convMatrix: Float32Array | null = null;
+let sigma: number = 0;
 
-let idx = 0;
-let total = 0;
+let idx: number = 0;
+let total: number = 0;
 
 
-function doWork(){
+function doWork(): {intermResult: boolean, percentDone: number} {
     const start = performance.now(); 
     //vertical Gaussan blur
     while (idx < height){
@@ -24,18 +24,18 @@ function doWork(){
                 let tot3 = 0;
                 for (let pos = -3 * sigma; pos <= 3 * sigma; pos ++){
                     const xpos = Math.min(Math.max(0, i + pos), height - 1);
-                    tot1 += convMatrix[pos + 3 * sigma] * inputPixels[4 * (xpos * width + j)];
-                    tot2 += convMatrix[pos + 3 * sigma] * inputPixels[4 * (xpos * width + j) + 1];
-                    tot3 += convMatrix[pos + 3 * sigma] * inputPixels[4 * (xpos * width + j) + 2];
+                    tot1 += convMatrix![pos + 3 * sigma] * inputPixels![4 * (xpos * width + j)];
+                    tot2 += convMatrix![pos + 3 * sigma] * inputPixels![4 * (xpos * width + j) + 1];
+                    tot3 += convMatrix![pos + 3 * sigma] * inputPixels![4 * (xpos * width + j) + 2];
                 }
-                intermPixels[4 * (i * width + j)] = tot1;
-                intermPixels[4 * (i * width + j) + 1] = tot2;
-                intermPixels[4 * (i * width + j) + 2] = tot3;
-                intermPixels[4 * (i * width + j) + 3] = inputPixels[4 * (i * width + j) + 3];
+                intermPixels![4 * (i * width + j)] = tot1;
+                intermPixels![4 * (i * width + j) + 1] = tot2;
+                intermPixels![4 * (i * width + j) + 2] = tot3;
+                intermPixels![4 * (i * width + j) + 3] = inputPixels![4 * (i * width + j) + 3];
             }
             idx ++;
             if (performance.now() - start >= timePeriod){
-                return {intermResult: false, percentDone: (i / (2 * height) * 100).toFixed(3)};
+                return {intermResult: false, percentDone: Number((i / (2 * height) * 100).toFixed(3))};
             }
         }
    //horizontal Gaussian blur
@@ -47,14 +47,14 @@ function doWork(){
         let tot3 = 0;
         for (let pos = -3 * sigma; pos <= 3 * sigma; pos ++){
             const ypos = Math.min(Math.max(0, j + pos), width - 1);
-            tot1 += convMatrix[pos + 3 * sigma] * intermPixels[4 * (i * width + ypos)];
-            tot2 += convMatrix[pos + 3 * sigma] * intermPixels[4 * (i * width + ypos) + 1];
-            tot3 += convMatrix[pos + 3 * sigma] * intermPixels[4 * (i * width + ypos) + 2];
+            tot1 += convMatrix![pos + 3 * sigma] * intermPixels![4 * (i * width + ypos)];
+            tot2 += convMatrix![pos + 3 * sigma] * intermPixels![4 * (i * width + ypos) + 1];
+            tot3 += convMatrix![pos + 3 * sigma] * intermPixels![4 * (i * width + ypos) + 2];
         }
-        outputPixels[4 * (i * width + j)] = tot1;
-        outputPixels[4 * (i * width + j) + 1] = tot2;
-        outputPixels[4 * (i * width + j) + 2] = tot3;
-        outputPixels[4 * (i * width + j) + 3] = intermPixels[4 * (i * width + j) + 3];
+        outputPixels![4 * (i * width + j)] = tot1;
+        outputPixels![4 * (i * width + j) + 1] = tot2;
+        outputPixels![4 * (i * width + j) + 2] = tot3;
+        outputPixels![4 * (i * width + j) + 3] = intermPixels![4 * (i * width + j) + 3];
     }
     idx ++;
     if (idx == 2 * height){
@@ -62,12 +62,13 @@ function doWork(){
     }
 
     if (performance.now() - start >= timePeriod){
-        return {intermResult: false, percentDone: (idx / (2 * height) * 100).toFixed(3)};
+        return {intermResult: false, percentDone: Number((idx / (2 * height) * 100).toFixed(3))};
     }
    }
+   return {intermResult: false, percentDone: Number((idx / (2 * height) * 100).toFixed(3))};
 }
 
-function createGaussian(){
+function createGaussian(): void{
      //create Gaussian distribution of size 6 sigma
     sigma = Math.round(blurRadius);
     var norm = 0
@@ -84,9 +85,17 @@ function createGaussian(){
     for (let i = 0; i <= 6 * sigma; i++){
         convMatrix[i] /= norm;
     }
+    return;
 }
 
-onmessage = function(e) {
+onmessage = function(e: MessageEvent<{
+  cmd: "start" | "stop";
+  blurRadius: number;
+  timePeriod: number;
+  inputPixels: ArrayBuffer;
+  width: number;
+  height: number;
+}>) {
     const {cmd, blurRadius: br, timePeriod: tp, inputPixels: inputBuf, width: w, height: h} = e.data;
  
     inputPixels  = new Uint8ClampedArray(inputBuf);
@@ -121,7 +130,10 @@ onmessage = function(e) {
             }
             else{
                 if (intermResult === true){
-                    postMessage({type: "finished", resultImage: outputPixels.buffer});
+                    if (!outputPixels) postMessage({type: "stopped"});
+                    else{
+                        postMessage({type: "finished", resultImage: outputPixels.buffer});
+                    }
                     clearInterval(interval);
                 }
             }

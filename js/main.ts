@@ -1,4 +1,4 @@
-import { UIHandler } from "./js/uiHandler.js";
+import { UIHandler } from "./uiHandler";
 window.onload = () =>
             {
                 new UIHandler();
