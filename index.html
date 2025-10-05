@@ -12,8 +12,19 @@
         </p>
         <input type = "file" accept=".jpg" id = "fileUpload">
         <div id="message" style="color: red; font-weight: bold;"></div>
-        <input type = "range" min = 0 max = 50 value = 10 step = 1 id = "sliderBar">
-        <span id = "blurRadius">20</span>
+       <br><br>
+        <div style="margin: 10px 0;">
+        <label for="sliderBar" style="display: block; margin-bottom: 6px;">
+            Blur radius (0 does nothing):
+        </label>
+        <input
+            type="range" 
+            id="sliderBar" 
+            min="0" max="50" value="10" step="1"
+            style="width: 200px; vertical-align: middle;"
+        >
+        <span id="blurRadius" style="margin-left: 8px;">10</span>
+        </div>
         <canvas id="preImage"
             width="400"
             height="400"

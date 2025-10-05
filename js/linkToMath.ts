@@ -76,7 +76,7 @@ export class LinkToMath{
 
 
     requestedStart(blurRadius: number, 
-        UIcall?: (progress: number) => void, //optional for now
+        UIcall?: (progress: number) => void,
          timePeriod: number = 50):
          Promise<boolean | "stopped">{
         if (this.isProcessStarted === true){

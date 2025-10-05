@@ -65,12 +65,16 @@ function doWork(): {intermResult: boolean, percentDone: number} {
         return {intermResult: false, percentDone: Number((idx / (2 * height) * 100).toFixed(3))};
     }
    }
-   return {intermResult: false, percentDone: Number((idx / (2 * height) * 100).toFixed(3))};
+   return { intermResult: false, percentDone: 0 };
 }
 
 function createGaussian(): void{
      //create Gaussian distribution of size 6 sigma
     sigma = Math.round(blurRadius);
+    if (sigma == 0){
+        convMatrix = new Float32Array([1]);
+        return;
+    }
     var norm = 0
     convMatrix = new Float32Array(6 * sigma + 1);
     for (let i = 0; i <= 3 * sigma; i++){
@@ -124,6 +128,7 @@ onmessage = function(e: MessageEvent<{
             if (needToStop){
                 postMessage({type: "stopped"});
                 clearInterval(interval);
+                return;
             }
             if (intermResult === false){ 
                 postMessage({type: "progress", progress: percentDone});
