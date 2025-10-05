@@ -1,84 +1,70 @@
 # GaussianBlur
-[index.html](index.html) implements very poor basic interface in html for the application
-[main.js](main.js) is currently empty but will implement UI and connect it with algorithmic computational heavy part in [algo.js](algo.js) 
-[workers.js](workers.js) This file will handle computational tasks in parallel threads using Web Workers.
+[index.html](index.html) implements very basic interface in html for the application
+
+[main.ts](./js/main.ts) is the starting point of the application
+
+[uiHandler.ts](./js/uiHandler.ts) is responsible for UI handling, without any business logic
+
+[linkToMath.ts](./js/linkToMath.ts) is a connection between UI and math-heavy computations
+
+[algoWorker.ts](./js/algoWorker.ts) implements separable in axis Gaussian blur in Web Worker
 
 
 ## General logic of the application
 
-1. User enters either the link or file to the application. After that some checks are performed to be sure that format is correct. 
+1. The user provides either a link or an image file to the application. Validation checks ensure that the format is correct.
+2. The image is displayed in the left window of the page, and the app waits until the Process an image button is pressed.
+3. When the button is pressed, the current slider value of blur radius is extracted and the algorithm starts immediately.
+4. After execution:
+   - On success — the blurred image is shown on the right.
+   - On failure — the user is informed.
+   - During processing — a completed percentage information is displayed.
+5. Additional options are available to download the blurred image or stop processing.\
+   The blur radius can be selected from 0 to 50, where 0 means no blur.
+6. The Gaussian blur is implemented in two passes (vertical and horizontal), taking advantage of the separability property of the Gaussian distribution for a significant speed-up.
 
-2. Then image is shown in the left window on the website, and the app starts listening, until the button **Process an image** is pressed
+## How to compile .ts sources into .js
 
-3. At that moment, the current value of the slider is extracted and the algorithm is immediately started
+This project uses TypeScript for type-safe development.\
+To run it in the browser, you need to compile the .ts files into .js.
 
-4. After the execution of the algorithm, on success we present the blurred picture on the right, on failure we inform the user and suggest to repeat. During the execution the loading spinner is shown to the user
+### 1. Install TypeScript
 
-## Architecture of [main.js](main.js)
+Install globally or locally in the project:
 
-Here, we mainly control UI. We will stick to OOP-style, working with classes *UIHandler* and *LinkToMath*
+```
+npm install -g typescript
+# or
+npm install --save-dev typescript
+```
 
-The *UIHandler* class will have the following fields (UI elements):
+### 2. Compile the sources
 
-1. *linkHolder*
+To compile all .ts files according to the tsconfig.json:
 
-2. *linkSubmit*
+```
+npx tsc
+```
 
-3. *fileSubmit*
+This will produce corresponding .js files inside dist/ directory
 
-4. *preWindow*
+### 3. Run the project
 
-5. *postWindow*
+You can open index.html directly in a browser
 
-6. *sliderBar*
+## Important note on imports
 
-7. *sliderValue*
+When using ES Modules ( in HTML), browsers require explicit file extensions in import paths.\
+You must include .js at the end of each import ([main.js](./dist/main.js) and [uiHandler.js](./dist/uiHandler.js))
 
-8. *startButton*
+Correct:
 
-9. *spinner*
+```
+import { gaussianBlur } from './algoWorker.js';
+```
 
-10. *errorMessage*
+Incorrect (will fail in browser):
 
-and the following methods that will be callbacks
-
-1. *onLinkUpload*
-
-2. *onFileUpload*
-
-3. *onExecStart*
-
-4. *showSpinner*
-
-5. *hideSpinner*
-
-6. *updSliderValue*
-
-also helpers
-
-7. *drawPicture*
-
-8. *showError*
-
-The class *LinkToMath* will have as fields all data extracted from users input that is relevant to processing algorithm, namely 
-
-1. *image* - initial image
-
-2. *imageData* - the *2d* array of pixels
-
-3. *processedImageData* - the processed 2d array of pixels
-
-
-and methods, that will call functions from [algo.js](algo.js) to perform computations, and also methods for handling data from UI
-
-1. *performBlur*
-
-2. *loadFromUrl*
-
-3. *loadFromFile*
-
-4. *requestedStart*
-
-5. *getImageData*
-
-
+```
+import { gaussianBlur } from './algoWorker';
+```
