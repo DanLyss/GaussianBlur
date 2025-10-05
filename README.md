@@ -1,13 +1,13 @@
 # GaussianBlur
 [index.html](index.html) implements very basic interface in html for the application
 
-[main.ts](./js/main.ts) is the starting point of the application
+[main.ts](./ts/main.ts) is the starting point of the application
 
-[uiHandler.ts](./js/uiHandler.ts) is responsible for UI handling, without any business logic
+[uiHandler.ts](./ts/uiHandler.ts) is responsible for UI handling, without any business logic
 
-[linkToMath.ts](./js/linkToMath.ts) is a connection between UI and math-heavy computations
+[linkToMath.ts](./ts/linkToMath.ts) is a connection between UI and math-heavy computations
 
-[algoWorker.ts](./js/algoWorker.ts) implements separable in axis Gaussian blur in Web Worker
+[algoWorker.ts](./ts/algoWorker.ts) implements separable in axis Gaussian blur in Web Worker
 
 
 ## General logic of the application
@@ -40,7 +40,7 @@ npm install --save-dev typescript
 
 ### 2. Compile the sources
 
-To compile all .ts files according to the tsconfig.json:
+To compile all .ts files according to the [tsconfig.json](./tsconfig.json):
 
 ```
 npx tsc
@@ -50,7 +50,7 @@ This will produce corresponding .js files inside dist/ directory
 
 ### 3. Run the project
 
-You can open index.html directly in a browser
+You can open [index.html](./index.html) directly in a browser
 
 ## Important note on imports
 
