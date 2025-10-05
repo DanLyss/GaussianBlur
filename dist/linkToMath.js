@@ -16,6 +16,7 @@ export class LinkToMath {
     loadFromUrl(url) {
         return new Promise(resolve => {
             const img = new Image();
+            img.crossOrigin = "anonymous"; 
             img.onload = () => {
                 if (img.width > 0 && img.height > 0) {
                     this.image = img;
